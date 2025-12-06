@@ -107,6 +107,7 @@
             Grid: (p) => <Icon path={<><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></>} {...p} />,
             Zap: (p) => <Icon path={<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>} {...p} />,
             Bulb: (p) => <Icon path={<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1 1.5-2 1.5-3.5 0-2.2-1.8-4-4-4s-4 1.8-4 4c0 1.5.5 2.5 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/>} {...p} />,
+            Dice: (p) => <Icon path={<rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="8" cy="8" r="1.5" /><circle cx="16" cy="16" r="1.5" /><circle cx="16" cy="8" r="1.5" /><circle cx="8" cy="16" r="1.5" /><circle cx="12" cy="12" r="1.5" />} {...p} />,
             Music: (p) => <Icon path={<><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></>} {...p} />,
             Paw: (p) => <Icon path={<path d="M12 2a3 3 0 0 0-3 3v7h6V5a3 3 0 0 0-3-3ZM2.7 10.3a3 3 0 1 0 .6 5.8l2.6.4v-3.7l-3.2-2.5ZM21.3 10.3l-3.2 2.5v3.7l2.6-.4a3 3 0 1 0 .6-5.8Z"/>} {...p} />,
             Pizza: (p) => <Icon path={<><path d="M15 11h.01"/><path d="M11 15h.01"/><path d="M16.5 13h.01"/><path d="M3 21.3a19 19 0 0 0 18 0l-9-19-9 19Z"/></>} {...p} />,
@@ -120,15 +121,15 @@
             Heart: (p) => <Icon path={<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>} {...p} />
         };
 
+        // --- DATOS ACTUALIZADOS (MÁS ACTUALES) ---
         const GAME_DATA = {
             'Cantantes': { 
                 icon: Icons.Music,
                 words: [
-                    'Bad Bunny', 'Rauw Alejandro', 'Mora', 'Jhayco', 'Feid', 'Anuel AA', 'Ozuna', 'Myke Towers', 
-                    'Bryant Myers', 'Young Miko', 'Lunay', 'Chencho Corleone', 'Wisin', 'Yandel', 'Farruko', 'Arcángel',
-                    'Daddy Yankee', 'Karol G', 'J Balvin', 'Maluma', 'Nicky Jam', 'Don Omar', 'Eladio Carrión', 
-                    'Sech', 'Cris Mj', 'De La Ghetto', 'Rosalía', 'Natti Natasha', 'Becky G', 'Duki', 'Quevedo', 
-                    'Saiko', 'Shakira', 'Bizarrap'
+                    'Mora', 'Jhayco', 'Feid', 'Quevedo', 'Saiko', 'Bad Bunny', 'Rauw Alejandro', 'Myke Towers', 
+                    'Eladio Carrión', 'Young Miko', 'Dei V', 'Cris Mj', 'Anuel AA', 'Ozuna', 'Bryant Myers', 
+                    'Arcángel', 'Lunay', 'Karol G', 'Rosalía', 'Bizarrap', 'Duki', 'Trueno', 'Nicki Nicole', 
+                    'Tiago PZK', 'Yandel', 'Wisin', 'Daddy Yankee', 'J Balvin', 'Maluma', 'Nicky Jam', 'Sech'
                 ], 
                 hints: ['Estrella Musical', 'Conciertos', 'Top Global', 'Fama Mundial', 'Videoclips', 'Premios Musicales', 'Escenario'] 
             },
@@ -261,13 +262,16 @@
             const [isWordVisible, setIsWordVisible] = useState(false);
             const [editingNames, setEditingNames] = useState(false);
             const [starterIndex, setStarterIndex] = useState(null);
+            const [realImpostorCount, setRealImpostorCount] = useState(1); // Para guardar el nº real si es aleatorio
 
             const lastWordRef = useRef(null);
             const lastImpostorRef = useRef(null);
 
             useEffect(() => {
                 const maxImpostors = Math.max(1, Math.floor((players - 1) / 2));
-                if (impostorCount > maxImpostors) {
+                // Si impostorCount es -1 (Aleatorio), no lo cambiamos aunque cambien los jugadores
+                // Si es un número fijo y supera el máximo, lo bajamos
+                if (impostorCount > maxImpostors && impostorCount !== -1) {
                     setImpostorCount(maxImpostors);
                 }
             }, [players]);
@@ -283,9 +287,20 @@
             };
 
             const handleImpostorCountChange = (increment) => {
-                const newCount = impostorCount + increment;
                 const maxImpostors = Math.max(1, Math.floor((players - 1) / 1.5)); 
-                if (newCount < 1 || newCount > maxImpostors) return;
+                
+                let newCount = impostorCount + increment;
+                
+                // Lógica especial para incluir el -1 (Aleatorio)
+                // Si estamos en 1 y bajamos -> -1
+                if (impostorCount === 1 && increment === -1) newCount = -1;
+                // Si estamos en -1 y subimos -> 1
+                else if (impostorCount === -1 && increment === 1) newCount = 1;
+                // Si estamos en -1 y bajamos -> se queda en -1
+                else if (impostorCount === -1 && increment === -1) return;
+                
+                if (newCount > maxImpostors) return;
+                
                 setImpostorCount(newCount);
             };
 
@@ -326,9 +341,18 @@
                 
                 setSecretWord(word); setCurrentCategoryName(cat); setImpostorHint(hint);
                 
+                // --- LÓGICA IMPOSTORES ALEATORIA ---
+                let finalImpostorCount = impostorCount;
+                if (impostorCount === -1) {
+                    // Si es aleatorio, elegimos entre 1 y el máximo sensato (mitad de jugadores)
+                    const maxSensible = Math.max(1, Math.floor((players - 1) / 2));
+                    finalImpostorCount = Math.floor(Math.random() * maxSensible) + 1;
+                }
+                setRealImpostorCount(finalImpostorCount);
+
                 const newImpostorIndices = new Set();
                 
-                if (impostorCount === 1 && players > 2) {
+                if (finalImpostorCount === 1 && players > 2) {
                     let newIndex;
                     let impAttempts = 0;
                     do {
@@ -339,7 +363,7 @@
                     newImpostorIndices.add(newIndex);
                     lastImpostorRef.current = newIndex;
                 } else {
-                    while(newImpostorIndices.size < impostorCount) {
+                    while(newImpostorIndices.size < finalImpostorCount) {
                         newImpostorIndices.add(Math.floor(Math.random() * players));
                     }
                 }
@@ -463,7 +487,6 @@
                                 <div className="flex flex-col h-full pt-12 pb-4 animate-fade-in">
                                     <h2 className="text-2xl font-bold text-slate-800 text-center mb-6 shrink-0">Configurar Partida</h2>
                                     
-                                    {/* Zona con scroll por si hay poco espacio vertical */}
                                     <div className="flex-1 overflow-y-auto custom-scrollbar px-1 pb-4">
                                         <Card>
                                             <div className="space-y-6">
@@ -482,7 +505,13 @@
                                                         <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block text-center">Impostores</label>
                                                         <div className="flex items-center justify-between bg-slate-100 rounded-2xl p-2 h-16">
                                                             <button onClick={() => handleImpostorCountChange(-1)} className="w-8 h-full flex items-center justify-center bg-white rounded-xl shadow-sm"><Icons.Minus size={16} /></button>
-                                                            <span className="text-xl font-black text-rose-500 w-8 text-center">{impostorCount}</span>
+                                                            <div className="w-8 text-center flex items-center justify-center">
+                                                                {impostorCount === -1 ? (
+                                                                    <Icons.Dice size={28} className="text-indigo-500 animate-pulse" />
+                                                                ) : (
+                                                                    <span className="text-xl font-black text-rose-500">{impostorCount}</span>
+                                                                )}
+                                                            </div>
                                                             <button onClick={() => handleImpostorCountChange(1)} className="w-8 h-full flex items-center justify-center bg-white rounded-xl shadow-sm"><Icons.Plus size={16} /></button>
                                                         </div>
                                                     </div>
@@ -561,7 +590,8 @@
                                                     <>
                                                         <div className="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6"><span className="text-4xl">🤫</span></div>
                                                         <h3 className="text-3xl font-black text-rose-500 mb-2">IMPOSTOR</h3>
-                                                        <p className="text-sm text-rose-400 mb-4 font-bold">Eres uno de los {impostorCount} impostores</p>
+                                                        {impostorCount === -1 && <p className="text-xs text-indigo-500 font-bold mb-1">(Modo Aleatorio)</p>}
+                                                        <p className="text-sm text-rose-400 mb-4 font-bold">Eres uno de los {realImpostorCount} impostores</p>
                                                         
                                                         {useHints ? (
                                                             <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 mx-2"><p className="text-xs font-bold text-slate-400 uppercase">Tu pista</p><p className="text-lg font-bold text-slate-800">"{impostorHint}"</p></div>
@@ -604,7 +634,7 @@
                                 <div className="text-center mt-6 mb-8">
                                     <span className="bg-green-100 text-green-700 font-bold px-4 py-1 rounded-full text-sm uppercase">En juego</span>
                                     <h2 className="text-3xl font-black text-slate-800 mt-4">Debate Abierto</h2>
-                                    {impostorCount > 1 && <p className="text-sm text-rose-500 font-bold mt-2">Hay {impostorCount} impostores entre vosotros</p>}
+                                    {realImpostorCount > 1 && <p className="text-sm text-rose-500 font-bold mt-2">Hay {realImpostorCount} impostores entre vosotros</p>}
                                 </div>
                                 
                                 <div className="bg-orange-50 border-2 border-orange-100 rounded-2xl p-6 text-center mx-4 mb-6 shadow-sm">
@@ -628,7 +658,7 @@
 
                                 <div className="w-full space-y-4 px-4">
                                     <div className="bg-white p-6 rounded-2xl shadow-lg border-l-8 border-rose-500 w-full text-left">
-                                        <p className="text-xs font-bold text-slate-400 uppercase">{impostorCount > 1 ? "Los Impostores eran" : "El Impostor era"}</p>
+                                        <p className="text-xs font-bold text-slate-400 uppercase">{realImpostorCount > 1 ? "Los Impostores eran" : "El Impostor era"}</p>
                                         <div className="flex flex-col gap-2 mt-2">
                                             {impostorIndices.map(idx => (
                                                 <div key={idx} className="flex items-center gap-3">
